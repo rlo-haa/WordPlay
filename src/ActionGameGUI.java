@@ -3,7 +3,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.*;
-import java.util.List;
 
 /**
  * 액션 게임 GUI - 단어 매칭 퍼즐 게임
@@ -211,22 +210,30 @@ public class ActionGameGUI extends JFrame {
                 }
             } else {
                 // 오답
+                final JButton currentSelectedButton = selectedButton;
+
                 selectedButton.setBackground(Color.RED);
                 meaningButton.setBackground(Color.RED);
+
+                JOptionPane.showMessageDialog(ActionGameGUI.this,
+                        "틀렸습니다. 다시 시도해보세요!", "알림", JOptionPane.INFORMATION_MESSAGE);
 
                 if (selectedWordData != null) {
                     selectedWordData.increaseTotal();
                 }
 
-                // 1초 후 색상 원래대로
+                selectedButton = null;
+
+                // 1초 후 색상 원래대로 - 저장된 지역 변수 사용
                 javax.swing.Timer timer = new javax.swing.Timer(1000, ae -> {
-                    selectedButton.setBackground(null);
+                    if (currentSelectedButton != null) {  // null 체크 추가
+                        currentSelectedButton.setBackground(null);
+                    }
                     meaningButton.setBackground(null);
                 });
                 timer.setRepeats(false);
                 timer.start();
 
-                selectedButton = null;
                 updateStatus();
             }
         }
