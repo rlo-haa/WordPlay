@@ -147,9 +147,23 @@ public class WordManagementGUI extends JFrame {
     }
 
     private JPanel createStatusPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 왼쪽에 상태 정보
+        JPanel statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         statusLabel = new JLabel("단어 개수: 0개");
-        panel.add(statusLabel);
+        statusInfoPanel.add(statusLabel);
+
+        // 오른쪽에 닫기 버튼
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton closeButton = new JButton("닫기");
+        closeButton.addActionListener(e -> dispose());
+        closeButton.setPreferredSize(new Dimension(80, 25));
+        buttonPanel.add(closeButton);
+
+        panel.add(statusInfoPanel, BorderLayout.WEST);
+        panel.add(buttonPanel, BorderLayout.EAST);
+
         return panel;
     }
 
@@ -262,17 +276,5 @@ public class WordManagementGUI extends JFrame {
                 }
             }
         }
-    }
-
-    public static void openWordManagement(WordBook wordBook) {
-        if (wordBook == null) {
-            JOptionPane.showMessageDialog(null, "단어장을 선택해주세요.", "오류", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        SwingUtilities.invokeLater(() -> {
-            WordManagementGUI gui = new WordManagementGUI(wordBook);
-            gui.setVisible(true);
-        });
     }
 }
