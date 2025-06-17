@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -23,6 +24,8 @@ public class StatisticsGUI extends JFrame {
     private DefaultTableModel weakWordsModel;
     private JButton refreshButton;
     private JButton studyWeakWordsButton;
+    private JButton selectAllButton;
+    private JButton deselectAllButton;
 
     public StatisticsGUI(WordBook wordBook) {
         this.wordBook = wordBook;
@@ -155,41 +158,65 @@ public class StatisticsGUI extends JFrame {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 설명 라벨
-        JLabel descLabel = new JLabel("정답률이 50% 미만인 단어들입니다. 집중적으로 학습해보세요!");
+        JLabel descLabel = new JLabel("정답률이 50% 미만인 단어들입니다. 체크박스를 선택하여 집중적으로 학습해보세요!");
         descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         panel.add(descLabel, BorderLayout.NORTH);
 
-        // 취약 단어 테이블
-        String[] weakColumnNames = {"단어", "뜻", "출제 횟수", "정답 횟수", "정답률(%)"};
+        // 취약 단어 테이블 (체크박스 포함)
+        String[] weakColumnNames = {"선택", "단어", "뜻", "출제 횟수", "정답 횟수", "정답률(%)"};
         weakWordsModel = new DefaultTableModel(weakColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column == 0; // 첫 번째 컬럼(체크박스)만 편집 가능
+            }
+
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) {
+                    return Boolean.class; // 체크박스
+                }
+                return String.class;
             }
         };
 
         weakWordsTable = new JTable(weakWordsModel);
-        weakWordsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        weakWordsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // 컬럼 너비 설정
-        weakWordsTable.getColumnModel().getColumn(0).setPreferredWidth(100);
-        weakWordsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
-        weakWordsTable.getColumnModel().getColumn(2).setPreferredWidth(80);
-        weakWordsTable.getColumnModel().getColumn(3).setPreferredWidth(80);
-        weakWordsTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        weakWordsTable.getColumnModel().getColumn(0).setPreferredWidth(50);  // 체크박스
+        weakWordsTable.getColumnModel().getColumn(1).setPreferredWidth(100); // 단어
+        weakWordsTable.getColumnModel().getColumn(2).setPreferredWidth(150); // 뜻
+        weakWordsTable.getColumnModel().getColumn(3).setPreferredWidth(80);  // 출제 횟수
+        weakWordsTable.getColumnModel().getColumn(4).setPreferredWidth(80);  // 정답 횟수
+        weakWordsTable.getColumnModel().getColumn(5).setPreferredWidth(80);  // 정답률
 
         JScrollPane weakScrollPane = new JScrollPane(weakWordsTable);
         panel.add(weakScrollPane, BorderLayout.CENTER);
 
-        // 취약 단어 학습 버튼
+        // 취약 단어 관련 버튼들
+        JPanel weakButtonPanel = new JPanel(new FlowLayout());
+
+        selectAllButton = new JButton("전체 선택");
+        selectAllButton.addActionListener(e -> selectAllWeakWords(true));
+        weakButtonPanel.add(selectAllButton);
+
+        deselectAllButton = new JButton("전체 해제");
+        deselectAllButton.addActionListener(e -> selectAllWeakWords(false));
+        weakButtonPanel.add(deselectAllButton);
+
         studyWeakWordsButton = new JButton("선택한 취약 단어로 퀴즈하기");
         studyWeakWordsButton.addActionListener(new StudyWeakWordsListener());
-
-        JPanel weakButtonPanel = new JPanel(new FlowLayout());
         weakButtonPanel.add(studyWeakWordsButton);
+
         panel.add(weakButtonPanel, BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    private void selectAllWeakWords(boolean select) {
+        for (int i = 0; i < weakWordsModel.getRowCount(); i++) {
+            weakWordsModel.setValueAt(select, i, 0);
+        }
     }
 
     private JPanel createButtonPanel() {
@@ -241,6 +268,7 @@ public class StatisticsGUI extends JFrame {
             // 취약 단어 테이블에 추가 (정답률 50% 미만)
             if (wordData.getTotalCount() > 0 && wordData.getAccuracy() < 50.0) {
                 Object[] weakRow = {
+                        false, // 기본적으로 체크박스는 선택되지 않음
                         wordData.getWord(),
                         wordData.getMeaning(),
                         wordData.getTotalCount(),
@@ -288,18 +316,26 @@ public class StatisticsGUI extends JFrame {
     private class StudyWeakWordsListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            int[] selectedRows = weakWordsTable.getSelectedRows();
-            if (selectedRows.length == 0) {
+            // 체크된 단어들 찾기
+            List<Integer> selectedIndexes = new ArrayList<>();
+            for (int i = 0; i < weakWordsModel.getRowCount(); i++) {
+                Boolean isSelected = (Boolean) weakWordsModel.getValueAt(i, 0);
+                if (isSelected != null && isSelected) {
+                    selectedIndexes.add(i);
+                }
+            }
+
+            if (selectedIndexes.isEmpty()) {
                 JOptionPane.showMessageDialog(StatisticsGUI.this,
-                        "학습할 취약 단어를 선택해주세요.", "알림", JOptionPane.INFORMATION_MESSAGE);
+                        "학습할 취약 단어를 체크박스로 선택해주세요.", "알림", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
 
             // 선택된 취약 단어들로 임시 단어장 생성
             WordBook tempWordBook = new WordBook("취약 단어 집중 학습");
-            for (int row : selectedRows) {
-                String word = (String) weakWordsModel.getValueAt(row, 0);
-                String meaning = (String) weakWordsModel.getValueAt(row, 1);
+            for (int index : selectedIndexes) {
+                String word = (String) weakWordsModel.getValueAt(index, 1);
+                String meaning = (String) weakWordsModel.getValueAt(index, 2);
                 tempWordBook.addWord(word, meaning);
             }
 
