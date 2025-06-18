@@ -27,7 +27,10 @@ public class WordBookManager {
         }
 
         WordBook newBook = new WordBook(name);
+        newBook.setManager(this); // 매니저 참조 설정
         wordBooks.put(name, newBook);
+
+        // 즉시 저장
         saveData();
         return true;
     }
@@ -38,6 +41,8 @@ public class WordBookManager {
             if (currentWordBook != null && currentWordBook.getName().equals(name)) {
                 currentWordBook = null;
             }
+
+            // 즉시 저장
             saveData();
             return true;
         }
@@ -59,6 +64,8 @@ public class WordBookManager {
         if (book != null) {
             book.setName(newName);
             wordBooks.put(newName, book);
+
+            // 즉시 저장
             saveData();
             return true;
         }
@@ -105,6 +112,12 @@ public class WordBookManager {
     private void loadData() {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DATA_FILE))) {
             wordBooks = (Map<String, WordBook>) ois.readObject();
+
+            // 로드된 단어장들에 매니저 참조 설정
+            for (WordBook wordBook : wordBooks.values()) {
+                wordBook.setManager(this);
+            }
+
             System.out.println("데이터가 로드되었습니다.");
         } catch (FileNotFoundException e) {
             System.out.println("저장된 데이터 파일이 없습니다. 새로 시작합니다.");

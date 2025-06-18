@@ -10,10 +10,16 @@ public class WordBook implements Serializable {
 
     private String name;
     private Map<String, WordData> words;
+    private transient WordBookManager manager; // 직렬화에서 제외
 
     public WordBook(String name) {
         this.name = name;
         this.words = new HashMap<>();
+    }
+
+    // WordBookManager 설정 (저장을 위해 필요)
+    public void setManager(WordBookManager manager) {
+        this.manager = manager;
     }
 
     // 단어 추가
@@ -31,12 +37,20 @@ public class WordBook implements Serializable {
         }
 
         words.put(word, new WordData(word, meaning));
+        // 즉시 저장
+        if (manager != null) {
+            manager.saveData();
+        }
         return true;
     }
 
     // 단어 삭제
     public boolean removeWord(String word) {
-        return words.remove(word) != null;
+        boolean removed = words.remove(word) != null;
+        if (removed && manager != null) {
+            manager.saveData();
+        }
+        return removed;
     }
 
     // 단어 수정
@@ -44,6 +58,10 @@ public class WordBook implements Serializable {
         WordData wordData = words.get(word);
         if (wordData != null) {
             wordData.setMeaning(newMeaning.trim());
+            // 즉시 저장
+            if (manager != null) {
+                manager.saveData();
+            }
             return true;
         }
         return false;
@@ -91,7 +109,13 @@ public class WordBook implements Serializable {
 
     // Getters and Setters
     public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setName(String name) {
+        this.name = name;
+        // 이름 변경시에도 즉시 저장
+        if (manager != null) {
+            manager.saveData();
+        }
+    }
 
     @Override
     public String toString() {

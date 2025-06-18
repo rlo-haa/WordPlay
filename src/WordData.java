@@ -11,6 +11,7 @@ public class WordData implements Serializable {
     private String meaning;     // 뜻
     private int totalCount;     // 총 출제 횟수
     private int correctCount;   // 정답 횟수
+    private transient WordBookManager manager; // 직렬화에서 제외
 
     public WordData(String word, String meaning) {
         this.word = word;
@@ -19,14 +20,27 @@ public class WordData implements Serializable {
         this.correctCount = 0;
     }
 
+    // WordBookManager 설정 (통계 변경 시 저장을 위해 필요)
+    public void setManager(WordBookManager manager) {
+        this.manager = manager;
+    }
+
     // 문제 출제 시 호출
     public void increaseTotal() {
         this.totalCount++;
+        // 통계 변경 시 즉시 저장
+        if (manager != null) {
+            manager.saveData();
+        }
     }
 
     // 정답 시 호출
     public void increaseCorrect() {
         this.correctCount++;
+        // 통계 변경 시 즉시 저장
+        if (manager != null) {
+            manager.saveData();
+        }
     }
 
     // 정답률 계산
