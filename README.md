@@ -1,6 +1,6 @@
 # 📚 WordPlay
 
-Java 기반 단어장 및 단어 학습 프로그램입니다. 단어를 저장하고, 취약 단어를 분석하며, 퀴즈 및 액션 게임을 통해 학습할 수 있습니다.
+Java 기반 단어장 및 단어 학습 프로그램입니다. 원하는 단어장에 단어를 저장하고, 취약 단어를 분석하며, 퀴즈 및 액션 게임을 통해 단어를 효과적으로 학습할 수 있습니다.
 
 <br>
 <p align="center">
@@ -34,7 +34,7 @@ Java 기반 단어장 및 단어 학습 프로그램입니다. 단어를 저장�
 ### 🗂️ 파일 구성
 ```markdown
 ├── src/
-│   ├── WordPlay.java
+│   ├── WordPlay.java (main 클래스, 프로그램의 시작점)
 │   ├── WordData.java
 │   ├── WordBook.java
 │   ├── WordBookManager.java
@@ -45,6 +45,6 @@ Java 기반 단어장 및 단어 학습 프로그램입니다. 단어를 저장�
 ├── img/
 │   └── mainUI.png (README를 위한 이미지)
 ├── README.md
-└── wordbooks.dat/ # github에 없음. 최초 실행시 자동 생성 DB
+└── wordbooks.dat # github에 없음. 최초 실행시 자동 생성 DB
 
 
