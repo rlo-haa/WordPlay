@@ -296,7 +296,7 @@ public class StatisticsGUI extends JFrame {
         // 정답률에 따른 색상 변경
         if (averageAccuracy >= 80) {
             averageAccuracyLabel.setForeground(Color.GREEN);
-        } else if (averageAccuracy >= 60) {
+        } else if (averageAccuracy >= 50) {
             averageAccuracyLabel.setForeground(Color.ORANGE);
         } else {
             averageAccuracyLabel.setForeground(Color.RED);
@@ -311,7 +311,7 @@ public class StatisticsGUI extends JFrame {
         double accuracy = wordData.getAccuracy();
         if (accuracy >= 80) {
             return "우수";
-        } else if (accuracy >= 60) {
+        } else if (accuracy >= 50) {
             return "보통";
         } else {
             return "취약";
