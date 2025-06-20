@@ -6,6 +6,12 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -348,33 +354,131 @@ public class StatisticsGUI extends JFrame {
     private class ExportStatisticsListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("=== ").append(wordBook.getName()).append(" 학습 통계 ===\n\n");
+            // 파일 저장 대화상자
+            JFileChooser fileChooser = new JFileChooser();
+            
+            // 기본 파일명 설정 (단어장 이름 + 날짜)
+            String currentDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
+            String defaultFileName = wordBook.getName() + "_통계_" + currentDate + ".txt";
+            fileChooser.setSelectedFile(new File(defaultFileName));
+            
+            // 파일 필터 설정
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt");
+                }
+                
+                @Override
+                public String getDescription() {
+                    return "텍스트 파일 (*.txt)";
+                }
+            });
 
-            // 전체 통계
+            int result = fileChooser.showSaveDialog(StatisticsGUI.this);
+            
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                
+                // 확장자 자동 추가
+                if (!selectedFile.getName().toLowerCase().endsWith(".txt")) {
+                    selectedFile = new File(selectedFile.getAbsolutePath() + ".txt");
+                }
+                
+                // 파일이 이미 존재하는 경우 확인
+                if (selectedFile.exists()) {
+                    int option = JOptionPane.showConfirmDialog(StatisticsGUI.this,
+                            "파일이 이미 존재합니다. 덮어쓰시겠습니까?", "파일 덮어쓰기", 
+                            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (option != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+                
+                // 통계 내용 생성
+                String statisticsContent = generateStatisticsContent();
+                
+                // 파일 저장
+                try {
+                    saveStatisticsToFile(selectedFile, statisticsContent);
+                    JOptionPane.showMessageDialog(StatisticsGUI.this,
+                            "통계가 성공적으로 저장되었습니다.\n저장 위치: " + selectedFile.getAbsolutePath(),
+                            "저장 완료", JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(StatisticsGUI.this,
+                            "파일 저장 중 오류가 발생했습니다: " + ex.getMessage(),
+                            "저장 오류", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+        
+        private String generateStatisticsContent() {
+            StringBuilder sb = new StringBuilder();
+            
+            // 헤더 정보
+            sb.append("=".repeat(50)).append("\n");
+            sb.append("WordPlay 학습 통계 리포트\n");
+            sb.append("=".repeat(50)).append("\n");
+            sb.append("단어장: ").append(wordBook.getName()).append("\n");
+            sb.append("생성일시: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시 mm분"))).append("\n");
+            sb.append("=".repeat(50)).append("\n\n");
+
+            // 전체 통계 요약
+            sb.append("【 전체 통계 요약 】\n");
+            sb.append("-".repeat(30)).append("\n");
             sb.append("총 단어 수: ").append(totalWordsLabel.getText()).append("\n");
             sb.append("평균 정답률: ").append(averageAccuracyLabel.getText()).append("\n");
             sb.append("총 출제 횟수: ").append(totalQuestionsLabel.getText()).append("\n\n");
 
             // 단어별 상세 통계
-            sb.append("=== 단어별 상세 통계 ===\n");
+            sb.append("【 단어별 상세 통계 】\n");
+            sb.append("-".repeat(80)).append("\n");
+            sb.append(String.format("%-15s %-20s %8s %8s %10s %8s\n", 
+                    "단어", "뜻", "출제횟수", "정답횟수", "정답률", "상태"));
+            sb.append("-".repeat(80)).append("\n");
+            
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                sb.append(String.format("%s : %s (출제: %s회, 정답: %s회, 정답률: %s%%, 상태: %s)\n",
-                        tableModel.getValueAt(i, 0), tableModel.getValueAt(i, 1),
-                        tableModel.getValueAt(i, 2), tableModel.getValueAt(i, 3),
-                        tableModel.getValueAt(i, 4), tableModel.getValueAt(i, 5)));
+                sb.append(String.format("%-15s %-20s %8s %8s %9s%% %8s\n",
+                        tableModel.getValueAt(i, 0), // 단어
+                        tableModel.getValueAt(i, 1), // 뜻
+                        tableModel.getValueAt(i, 2), // 출제 횟수
+                        tableModel.getValueAt(i, 3), // 정답 횟수
+                        tableModel.getValueAt(i, 4), // 정답률
+                        tableModel.getValueAt(i, 5)  // 상태
+                ));
             }
-
-            // 텍스트 영역에 표시
-            JTextArea textArea = new JTextArea(sb.toString());
-            textArea.setEditable(false);
-            textArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
-
-            JScrollPane scrollPane = new JScrollPane(textArea);
-            scrollPane.setPreferredSize(new Dimension(500, 400));
-
-            JOptionPane.showMessageDialog(StatisticsGUI.this, scrollPane,
-                    "통계 내보내기", JOptionPane.INFORMATION_MESSAGE);
+            
+            // 취약 단어 통계 (정답률 50% 미만)
+            if (weakWordsModel.getRowCount() > 0) {
+                sb.append("\n\n【 취약 단어 목록 (정답률 50% 미만) 】\n");
+                sb.append("-".repeat(80)).append("\n");
+                sb.append(String.format("%-15s %-20s %8s %8s %10s\n", 
+                        "단어", "뜻", "출제횟수", "정답횟수", "정답률"));
+                sb.append("-".repeat(80)).append("\n");
+                
+                for (int i = 0; i < weakWordsModel.getRowCount(); i++) {
+                    sb.append(String.format("%-15s %-20s %8s %8s %9s%%\n",
+                            weakWordsModel.getValueAt(i, 1), // 단어
+                            weakWordsModel.getValueAt(i, 2), // 뜻
+                            weakWordsModel.getValueAt(i, 3), // 출제 횟수
+                            weakWordsModel.getValueAt(i, 4), // 정답 횟수
+                            weakWordsModel.getValueAt(i, 5)  // 정답률
+                    ));
+                }
+            }
+            
+            // 푸터
+            sb.append("\n").append("=".repeat(50)).append("\n");
+            sb.append("WordPlay 학습 통계 리포트 끝\n");
+            sb.append("=".repeat(50));
+            
+            return sb.toString();
+        }
+        
+        private void saveStatisticsToFile(File file, String content) throws IOException {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, java.nio.charset.StandardCharsets.UTF_8))) {
+                writer.write(content);
+            }
         }
     }
 
